@@ -32,6 +32,8 @@ INSTALLED_APPS = [
     'movies',
     'allauth',
     'allauth.account',
+    'rest_framework',
+    'article'
 ]
 
 MIDDLEWARE = [
