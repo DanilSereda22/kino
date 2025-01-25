@@ -10,6 +10,7 @@ urlpatterns = [
     path('ckeditor/', include('ckeditor_uploader.urls')),
     path('pages/',include('django.contrib.flatpages.urls')),
     path("",include("movies.urls")),
+    path("",include("article.urls")),
 ]
 
 urlpatterns += i18n_patterns(
