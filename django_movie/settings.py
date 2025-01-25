@@ -33,7 +33,8 @@ INSTALLED_APPS = [
     'allauth',
     'allauth.account',
     'rest_framework',
-    'article'
+    'article',
+    'snippets',
 ]
 
 MIDDLEWARE = [
@@ -49,7 +50,7 @@ MIDDLEWARE = [
     'django.contrib.flatpages.middleware.FlatpageFallbackMiddleware'
 ]
 
-ROOT_URLCONF = 'django_movie.urls'
+ROOT_URLCONF = 'snippets.urls'
 
 TEMPLATES = [
     {
@@ -199,3 +200,9 @@ CKEDITOR_CONFIGS = {
     }
 }
 SITE_ID = 1
+LOGOUT_REDIRECT_URL = '/'
+REST_FRAMEWORK = {
+ 'DEFAULT_PERMISSION_CLASSES': [
+ 'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
+ ]
+}
