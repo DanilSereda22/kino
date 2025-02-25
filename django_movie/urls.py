@@ -4,14 +4,12 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
 
+
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', include('article.urls')),
     path('ckeditor/', include('ckeditor_uploader.urls')),
     path('pages/',include('django.contrib.flatpages.urls')),
     path("",include("movies.urls")),
-    path("",include("article.urls")),
-    path('', include('snippets.urls')),
 ]
 
 urlpatterns += i18n_patterns(

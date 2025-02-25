@@ -15,7 +15,14 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-
+REST_FRAMEWORK = {
+    'DEFAULT_RENDERER_CLASSES': (
+        'rest_framework.renderers.JSONRenderer',
+    ),
+    'JSON_RENDERER': {
+        'ensure_ascii': False,
+    },
+}
 # Application definition
 
 INSTALLED_APPS = [
@@ -33,8 +40,6 @@ INSTALLED_APPS = [
     'allauth',
     'allauth.account',
     'rest_framework',
-    'article',
-    'snippets',
 ]
 
 MIDDLEWARE = [
@@ -50,7 +55,7 @@ MIDDLEWARE = [
     'django.contrib.flatpages.middleware.FlatpageFallbackMiddleware'
 ]
 
-ROOT_URLCONF = 'snippets.urls'
+ROOT_URLCONF = 'django_movie.urls'
 
 TEMPLATES = [
     {
@@ -200,9 +205,4 @@ CKEDITOR_CONFIGS = {
     }
 }
 SITE_ID = 1
-LOGOUT_REDIRECT_URL = '/'
-REST_FRAMEWORK = {
- 'DEFAULT_PERMISSION_CLASSES': [
- 'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
- ]
-}
+APPEND_SLASH = True
