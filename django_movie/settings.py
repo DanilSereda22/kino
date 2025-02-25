@@ -18,12 +18,10 @@ ALLOWED_HOSTS = []
 REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
     ),
-    'JSON_RENDERER': {
-        'ensure_ascii': False,
-    },
 }
-# Application definition
+
 
 INSTALLED_APPS = [
     'django.contrib.admin',

@@ -12,47 +12,46 @@ from .serializers import MovieSerializer
 from rest_framework import viewsets
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.parsers import JSONParser
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.decorators import api_view
 
-@csrf_exempt
-def movie_list(request):
-    """List all movies or create a new movie."""
+@api_view(['GET', 'POST'])
+def movie_list(request, *args, **kwargs):
     if request.method == 'GET':
         movies = Movie.objects.all()
         serializer = MovieSerializer(movies, many=True)
-        return JsonResponse(serializer.data, safe=False, json_dumps_params={'ensure_ascii': False})
+        return Response(serializer.data)  # Используйте Response здесь
 
     elif request.method == 'POST':
-        data = JSONParser().parse(request)
-        serializer = MovieSerializer(data=data)
+        serializer = MovieSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return JsonResponse(serializer.data, status=201, json_dumps_params={'ensure_ascii': False})
-        return JsonResponse(serializer.errors, status=400)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-@csrf_exempt
-def movie_detail(request, pk):
-    """Retrieve, update or delete a movie."""
+@api_view(['GET', 'PUT', 'DELETE'])
+def movie_detail(request, pk, *args, **kwargs):
     try:
         movie = Movie.objects.get(pk=pk)
     except Movie.DoesNotExist:
-        return HttpResponse(status=404)
+        return Response(status=status.HTTP_404_NOT_FOUND)
 
     if request.method == 'GET':
         serializer = MovieSerializer(movie)
-        return JsonResponse(serializer.data, json_dumps_params={'ensure_ascii': False})  # Ensure non-ASCII characters are rendered correctly
+        return Response(serializer.data)
 
     elif request.method == 'PUT':
-        data = JSONParser().parse(request)
-        serializer = MovieSerializer(movie, data=data)
+        serializer = MovieSerializer(movie, data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return JsonResponse(serializer.data, json_dumps_params={'ensure_ascii': False})  # Ensure non-ASCII characters are rendered correctly
-        return JsonResponse(serializer.errors, status=400)
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     elif request.method == 'DELETE':
         movie.delete()
-        return HttpResponse(status=204)
-
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    
 class GenreYear:
     """Жанры и года выхода фильма"""
     def get_genres(self):
@@ -162,3 +161,4 @@ class Search(ListView):
         context = super().get_context_data(*args, **kwargs)
         context["q"] = f'q={self.request.GET.get("q")}&'
         return context
+    

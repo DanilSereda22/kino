@@ -1,6 +1,7 @@
 from django.urls import path,include
 from rest_framework.routers import DefaultRouter
 from . import views
+from rest_framework.urlpatterns import format_suffix_patterns
 
 
 urlpatterns = [
@@ -15,3 +16,4 @@ urlpatterns = [
     path("add-rating/", views.AddStarRating.as_view(), name='add_rating'),
     path("json-filter/", views.JsonFilterMoviesView.as_view(), name='json_filter'),
 ]
+urlpatterns = format_suffix_patterns(urlpatterns)
