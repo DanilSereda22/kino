@@ -1,16 +1,16 @@
 from django.urls import path,include
 from rest_framework.routers import DefaultRouter
-from . import views
 from rest_framework.urlpatterns import format_suffix_patterns
+from movies.views import api_root, MovieViewSet, UserViewSet
+from movies import views
+from rest_framework import renderers
 
+router = DefaultRouter()
+router.register(r'movies', views.MovieViewSet, basename='movie')
+router.register(r'users', views.UserViewSet, basename='user')
 
 urlpatterns = [
-    path('', views.api_root),
-    path('movies/', views.MovieList.as_view(),name='movie-list'),
-    path('movies/<int:pk>/', views.MovieDetail.as_view(),name='movie-detail'),
-    path('movies/<int:pk>/highlight/', views.MovieHighlight.as_view(),name='movie-highlight'),
-    path('users/', views.UserList.as_view(),name='user-list'),
-    path('users/<int:pk>/', views.UserDetail.as_view(),name='user-detail'),
+    path('', include(router.urls)),
     path("", views.MoviesView.as_view()),
     path("filter/", views.FilterMoviesView.as_view(), name='filter'),
     path("search/", views.Search.as_view(), name='search'),
@@ -20,7 +20,34 @@ urlpatterns = [
     path("add-rating/", views.AddStarRating.as_view(), name='add_rating'),
     path("json-filter/", views.JsonFilterMoviesView.as_view(), name='json_filter'),
 ]
-urlpatterns = format_suffix_patterns(urlpatterns)
+movie_list = MovieViewSet.as_view({
+    'get': 'list',
+    'post': 'create'
+})
+movie_detail = MovieViewSet.as_view({
+    'get': 'retrieve',
+    'put': 'update',
+    'patch': 'partial_update',
+    'delete': 'destroy'
+})
+movie_highlight = MovieViewSet.as_view({
+    'get': 'highlight'
+}, renderer_classes=[renderers.StaticHTMLRenderer])
+user_list = UserViewSet.as_view({
+    'get': 'list'
+})
+user_detail = UserViewSet.as_view({
+    'get': 'retrieve'
+})
+urlpatterns = format_suffix_patterns([
+    path('', api_root),
+    path('movies/', movie_list, name='movie-list'),
+    path('movies/<int:pk>/', movie_detail, name='movie-detail'),
+    path('movies/<int:pk>/highlight/', movie_highlight, name='movie-highlight'),
+    path('users/', user_list, name='user-list'),
+    path('users/<int:pk>/', user_detail, name='user-detail')
+])
+
 urlpatterns += [
     path('api-auth/', include('rest_framework.urls')),
 ]
