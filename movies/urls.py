@@ -7,6 +7,8 @@ from rest_framework.urlpatterns import format_suffix_patterns
 urlpatterns = [
     path('movies/', views.MovieList.as_view()),
     path('movies/<int:pk>/', views.MovieDetail.as_view()),
+    path('users/', views.UserList.as_view()),
+    path('users/<int:pk>/', views.UserDetail.as_view()),
     path("", views.MoviesView.as_view()),
     path("filter/", views.FilterMoviesView.as_view(), name='filter'),
     path("search/", views.Search.as_view(), name='search'),
@@ -17,3 +19,6 @@ urlpatterns = [
     path("json-filter/", views.JsonFilterMoviesView.as_view(), name='json_filter'),
 ]
 urlpatterns = format_suffix_patterns(urlpatterns)
+urlpatterns += [
+    path('api-auth/', include('rest_framework.urls')),
+]

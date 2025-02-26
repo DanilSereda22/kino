@@ -1,0 +1,53 @@
+{% load i18n movie_tag %}
+{%load static%}
+<header class="header" style="background-color: #ffffff">
+    <div class="container-fluid px-lg-5">
+        <nav class="py-4">
+            <div id="logo">
+                <h1><a href="/" class="editContent">
+                    <img src="{% static 'images/lo.png' %}" alt="Django Movie Logo" alt="Home"width="350" height="200">  
+                </h1>
+            </a>
+            </div>
+            <label for="drop" class="toggle">Menu</label>
+            <input type="checkbox" id="drop">
+            <ul class="menu mt-2">
+                <li>
+                    <label for="drop-2" class="toggle" style="color: #000000;">Категории <span
+                            class="fa fa-angle-down" aria-hidden="true"></span> </label>
+                    <a href="#" style="color: #000000;">Категории <span class="fa fa-angle-down"
+                                                                        aria-hidden="true"></span></a>
+                    <input type="checkbox" id="drop-2">
+                    <ul>
+                        {% get_categories as categories %} 
+                        {% for category in categories %}
+                            <li><a href="/" style="color: #000000;">{{ category.name }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </li>
+                <li>
+                    {% if user.is_authenticated %}
+                        <span>{{ user.username }}</span>
+                        <a href="{% url 'account_logout' %}"
+                           style="color: #000000; font-weight: 700; text-transform: uppercase;">
+                            Выход
+                        </a>
+                    {% else %}
+                        <a href="{% url 'account_login' %}"
+                           style="color: #000000; font-weight: 700; text-transform: uppercase;">
+                            Вход
+                        </a>
+                        <a href="{% url 'account_signup' %}"
+                           style="color: #000000; font-weight: 700; text-transform: uppercase;">
+                            Регистрация
+                        </a>
+                    {% endif %}
+                </li>                
+            </ul>
+        </nav>
+    </div>
+</header>
+<div class="banner-info">
+    <div class="ban-buttons">
+    </div>
+</div>

@@ -51,7 +51,7 @@ class MovieAdmin(admin.ModelAdmin):
             "fields": (("title", "tagline"),)
         }),
         (None, {
-            "fields": ("description", ("poster","get_image"))
+            "fields": ("description", ("poster", "get_image"))
         }),
         (None, {
             "fields": (("year", "world_premiere", "country"),)
@@ -61,7 +61,7 @@ class MovieAdmin(admin.ModelAdmin):
             "fields": (("actors", "directors", "genres", "category"),)
         }),
         (None, {
-            "fields": (("budget", "fees_in_usa", "fess_in_world"),)
+            "fields": (("budget", "fees_in_usa", "fees_in_world"),)  # Исправлено здесь
         }),
         ("Options", {
             "fields": (("url", "draft"),)
