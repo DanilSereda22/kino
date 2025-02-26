@@ -1,9 +1,12 @@
 from django.urls import path,include
 from rest_framework.routers import DefaultRouter
 from rest_framework.urlpatterns import format_suffix_patterns
-from movies.views import api_root, MovieViewSet, UserViewSet
+from movies.views import api_root, MovieViewSet, UserViewSet,UserList
 from movies import views
 from rest_framework import renderers
+from django.contrib.auth.models import User
+from movies.serializers import UserSerializer
+from rest_framework.generics import ListCreateAPIView
 
 router = DefaultRouter()
 router.register(r'movies', views.MovieViewSet, basename='movie')
@@ -44,7 +47,7 @@ urlpatterns = format_suffix_patterns([
     path('movies/', movie_list, name='movie-list'),
     path('movies/<int:pk>/', movie_detail, name='movie-detail'),
     path('movies/<int:pk>/highlight/', movie_highlight, name='movie-highlight'),
-    path('users/', user_list, name='user-list'),
+    path('users/', ListCreateAPIView.as_view(queryset=User.objects.all(), serializer_class=UserSerializer), name='user-list'),
     path('users/<int:pk>/', user_detail, name='user-detail')
 ])
 

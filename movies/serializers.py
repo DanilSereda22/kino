@@ -7,18 +7,18 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'movies']
+        fields = ['url','id', 'username', 'movies']
 
 class MovieSerializer(serializers.ModelSerializer):
     directors = serializers.PrimaryKeyRelatedField(many=True, queryset=Actor.objects.all())
     actors = serializers.PrimaryKeyRelatedField(many=True, queryset=Actor.objects.all())
     genres = serializers.PrimaryKeyRelatedField(many=True, queryset=Genre.objects.all())
     category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all())
+    highlighted = serializers.HyperlinkedIdentityField(view_name='movie-highlight', format='html')
 
     class Meta:
         model = Movie
-        fields = [
-            'id', 'title', 'tagline', 'description', 'poster', 
+        fields = ['url','id','highlighted', 'title', 'tagline', 'description', 'poster', 
             'year', 'country', 'directors', 'actors', 'genres', 
             'world_premiere', 'budget', 'fees_in_usa', 'fees_in_world',  # Исправлено здесь
             'category', 'url', 'draft'
