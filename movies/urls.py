@@ -9,9 +9,32 @@ from movies.serializers import UserSerializer
 from rest_framework.generics import ListCreateAPIView
 
 router = DefaultRouter()
-router.register(r'movies', views.MovieViewSet, basename='movie')
-router.register(r'users', views.UserViewSet, basename='user')
+router.register(r'movies', MovieViewSet, basename='movie')
+router.register(r'users', UserViewSet, basename='user')
 
+# Базовые представления для ViewSet
+movie_list = MovieViewSet.as_view({
+    'get': 'list',
+    'post': 'create'
+})
+movie_detail = MovieViewSet.as_view({
+    'get': 'retrieve',
+    'put': 'update',
+    'patch': 'partial_update',
+    'delete': 'destroy'
+})
+user_list = UserViewSet.as_view({
+    'get': 'list',
+    'post': 'create'
+})
+user_detail = UserViewSet.as_view({
+    'get': 'retrieve',
+    'put': 'update',
+    'patch': 'partial_update',
+    'delete': 'destroy'
+})
+
+# URL-шаблоны
 urlpatterns = [
     path('', include(router.urls)),
     path("", views.MoviesView.as_view()),
@@ -23,32 +46,13 @@ urlpatterns = [
     path("add-rating/", views.AddStarRating.as_view(), name='add_rating'),
     path("json-filter/", views.JsonFilterMoviesView.as_view(), name='json_filter'),
 ]
-movie_list = MovieViewSet.as_view({
-    'get': 'list',
-    'post': 'create'
-})
-movie_detail = MovieViewSet.as_view({
-    'get': 'retrieve',
-    'put': 'update',
-    'patch': 'partial_update',
-    'delete': 'destroy'
-})
-movie_highlight = MovieViewSet.as_view({
-    'get': 'highlight'
-}, renderer_classes=[renderers.StaticHTMLRenderer])
-user_list = UserViewSet.as_view({
-    'get': 'list'
-})
-user_detail = UserViewSet.as_view({
-    'get': 'retrieve'
-})
-urlpatterns = format_suffix_patterns([
+
+urlpatterns += format_suffix_patterns([
     path('', api_root),
     path('movies/', movie_list, name='movie-list'),
     path('movies/<int:pk>/', movie_detail, name='movie-detail'),
-    path('movies/<int:pk>/highlight/', movie_highlight, name='movie-highlight'),
-    path('users/', ListCreateAPIView.as_view(queryset=User.objects.all(), serializer_class=UserSerializer), name='user-list'),
-    path('users/<int:pk>/', user_detail, name='user-detail')
+    path('users/', user_list, name='user-list'),
+    path('users/<int:pk>/', user_detail, name='user-detail'),
 ])
 
 urlpatterns += [
