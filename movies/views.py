@@ -1,37 +1,43 @@
 from typing import Any
 from django.conf import settings
-from django.db import models
-from django.db.models import Q, OuterRef, Subquery, Case, When
+from django.db.models import Q
 from django.http import JsonResponse, HttpResponse
-from django.shortcuts import redirect,render
+from django.shortcuts import redirect
 from django.views.generic import ListView, DetailView
 from django.views.generic.base import View
-from .models import Movie, Category, Actor, Genre, Rating, Reviews
+from .models import Movie, Actor, Genre, Rating
 from .forms import ReviewForm, RatingForm
 from .serializers import MovieSerializer
 from rest_framework import viewsets
-from django.views.decorators.csrf import csrf_exempt
-from rest_framework.parsers import JSONParser
 from rest_framework.response import Response
 from rest_framework import generics
 from django.contrib.auth.models import User
 from movies.serializers import UserSerializer,PasswordSerializer
-from rest_framework import permissions
-from movies.permissions import IsOwnerOrReadOnly
 from rest_framework.decorators import api_view
-from rest_framework.response import Response
 from rest_framework.reverse import reverse
-from rest_framework import renderers
-from rest_framework import viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly, IsAdminUser
-from django.shortcuts import get_object_or_404
-from http import HTTPMethod
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework import status
 from rest_framework.renderers import StaticHTMLRenderer
-from rest_framework import mixins, viewsets
+from rest_framework.renderers import JSONRenderer,TemplateHTMLRenderer
+from rest_framework.views import APIView
 
+class UserDetail(generics.RetrieveAPIView):
+    queryset = User.objects.all()
+    renderer_classes = [TemplateHTMLRenderer]
 
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        return Response({'user': self.object}, template_name='user_detail.html')
+    
+class UserCountView(APIView):
+    renderer_classes = [JSONRenderer]
+
+    def get(self, request, format=None):
+        user_count = User.objects.filter(active=True).count()
+        content = {'user_count': user_count}
+        return Response(content)
+    
 @api_view(['GET'])
 def api_root(request, format=None):
     return Response({
@@ -56,13 +62,12 @@ class MovieViewSet(viewsets.ModelViewSet):
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]  # Только авторизованные могут просматривать и редактировать
+    permission_classes = [IsAuthenticatedOrReadOnly] 
 
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def set_password(self, request, pk=None):
         user = self.get_object()
         
-        # Проверка: только сам пользователь может менять свой пароль
         if request.user != user:
             return Response(
                 {'error': 'Вы можете изменить только свой пароль.'},
@@ -98,11 +103,6 @@ class UserList(generics.ListCreateAPIView):
         return Response(serializer.data)
 
 
-<<<<<<< HEAD
-=======
-
-
->>>>>>> 36510f057dc66e84d484b5f0cec8b59cbe9b41a8
 class GenreYear:
     """Жанры и года выхода фильма"""
     def get_genres(self):
