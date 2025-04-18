@@ -98,6 +98,11 @@ class UserList(generics.ListCreateAPIView):
         return Response(serializer.data)
 
 
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> 36510f057dc66e84d484b5f0cec8b59cbe9b41a8
 class GenreYear:
     """Жанры и года выхода фильма"""
     def get_genres(self):

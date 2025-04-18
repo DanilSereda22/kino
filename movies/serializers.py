@@ -10,7 +10,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['url','id', 'username', 'movies']
+        fields = ['url', 'id', 'username', 'movies']
 
 class MovieSerializer(serializers.ModelSerializer):
     directors = serializers.PrimaryKeyRelatedField(many=True, queryset=Actor.objects.all())
@@ -21,11 +21,23 @@ class MovieSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Movie
-        fields = ['url','id','highlighted', 'title', 'tagline', 'description', 'poster', 
-            'year', 'country', 'directors', 'actors', 'genres', 
-            'world_premiere', 'budget', 'fees_in_usa', 'fees_in_world',  # Исправлено здесь
-            'category', 'url', 'draft'
-        ]
+        # Убираем дублирование поля 'url' в fields
+        fields = ['id', 'url', 'highlighted', 'title', 'tagline', 'description', 'poster', 
+                  'year', 'country', 'directors', 'actors', 'genres', 
+                  'world_premiere', 'budget', 'fees_in_usa', 'fees_in_world', 
+                  'category', 'draft']
+
+    def validate_url(self, value):
+        """
+        Проверка уникальности поля url
+        """
+        # Если это создание нового объекта
+        if self.instance is None and Movie.objects.filter(url=value).exists():
+            raise serializers.ValidationError("A movie with this URL already exists")
+        # Если это обновление, исключаем текущий объект из проверки
+        elif self.instance and Movie.objects.filter(url=value).exclude(id=self.instance.id).exists():
+            raise serializers.ValidationError("A movie with this URL already exists")
+        return value
 
     def create(self, validated_data):
         """Create and return a new `Movie` instance, given the validated data."""
@@ -54,7 +66,7 @@ class MovieSerializer(serializers.ModelSerializer):
         instance.world_premiere = validated_data.get('world_premiere', instance.world_premiere)
         instance.budget = validated_data.get('budget', instance.budget)
         instance.fees_in_usa = validated_data.get('fees_in_usa', instance.fees_in_usa)
-        instance.fees_in_world = validated_data.get('fees_in_world', instance.fees_in_world)  # Исправлено здесь
+        instance.fees_in_world = validated_data.get('fees_in_world', instance.fees_in_world)
         instance.category = validated_data.get('category', instance.category)
         instance.url = validated_data.get('url', instance.url)
         instance.draft = validated_data.get('draft', instance.draft)
