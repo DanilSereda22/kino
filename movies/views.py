@@ -15,7 +15,7 @@ from rest_framework.parsers import JSONParser
 from rest_framework.response import Response
 from rest_framework import generics
 from django.contrib.auth.models import User
-from movies.serializers import UserSerializer
+from movies.serializers import UserSerializer,PasswordSerializer
 from rest_framework import permissions
 from movies.permissions import IsOwnerOrReadOnly
 from rest_framework.decorators import api_view
@@ -24,7 +24,13 @@ from rest_framework.reverse import reverse
 from rest_framework import renderers
 from rest_framework import viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAdminUser
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly, IsAdminUser
+from django.shortcuts import get_object_or_404
+from http import HTTPMethod
+from rest_framework import status
+from rest_framework.renderers import StaticHTMLRenderer
+from rest_framework import mixins, viewsets
+
 
 @api_view(['GET'])
 def api_root(request, format=None):
@@ -33,12 +39,13 @@ def api_root(request, format=None):
         'movies': reverse('movie-list', request=request, format=format)
     })
 
+    
 class MovieViewSet(viewsets.ModelViewSet):
     queryset = Movie.objects.all()
     serializer_class = MovieSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly,IsOwnerOrReadOnly]
+    permission_classes = [IsAuthenticatedOrReadOnly]
 
-    @action(detail=True, renderer_classes=[renderers.StaticHTMLRenderer])
+    @action(detail=True, renderer_classes=[StaticHTMLRenderer])
     def highlight(self, request, *args, **kwargs):
         movie = self.get_object()
         return Response(movie.highlighted)
@@ -46,21 +53,51 @@ class MovieViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
 
-class UserViewSet(viewsets.ReadOnlyModelViewSet):
-
+class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]  # Только авторизованные могут просматривать и редактировать
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def set_password(self, request, pk=None):
+        user = self.get_object()
+        
+        # Проверка: только сам пользователь может менять свой пароль
+        if request.user != user:
+            return Response(
+                {'error': 'Вы можете изменить только свой пароль.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        serializer = PasswordSerializer(data=request.data)
+        if serializer.is_valid():
+            user.set_password(serializer.validated_data['password'])
+            user.save()
+            return Response({'status': 'установлен новый пароль'}, status=status.HTTP_200_OK)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False)
+    def recent_users(self, request):
+        recent_users = User.objects.all().order_by('-last_login')
+        page = self.paginate_queryset(recent_users)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        serializer = self.get_serializer(recent_users, many=True)
+        return Response(serializer.data)
 
 class UserList(generics.ListCreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAuthenticatedOrReadOnly]
 
     def list(self, request):
         queryset = self.get_queryset()
         serializer = UserSerializer(queryset, many=True)
         return Response(serializer.data)
-    
+
+
 class GenreYear:
     """Жанры и года выхода фильма"""
     def get_genres(self):
@@ -74,11 +111,7 @@ class MoviesView(GenreYear,ListView):
     queryset = Movie.objects.filter(draft=False)
     template_name = "movies/movies.html"
     paginate_by = 6
-
-for index, movie in enumerate(Movie.objects.all(), start=1):
-    movie.id = index 
-    movie.save()
-                  
+             
 class MovieDetailView(GenreYear,DetailView):
     """Полное описание фильма"""
     model = Movie

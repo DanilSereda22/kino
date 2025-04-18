@@ -2,6 +2,9 @@ from rest_framework import serializers
 from .models import Movie, Actor, Genre, Category  
 from django.contrib.auth.models import User
 
+class PasswordSerializer(serializers.Serializer):
+    password = serializers.CharField(write_only=True, required=True)
+
 class UserSerializer(serializers.ModelSerializer):
     movies = serializers.PrimaryKeyRelatedField(many=True, queryset=Movie.objects.all())
 
