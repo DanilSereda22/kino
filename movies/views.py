@@ -18,10 +18,17 @@ from rest_framework.reverse import reverse
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework import status
-from rest_framework.renderers import JSONRenderer, BrowsableAPIRenderer, AdminRenderer
-from rest_framework.renderers import JSONRenderer,TemplateHTMLRenderer
+from rest_framework.renderers import StaticHTMLRenderer
+from rest_framework.renderers import JSONRenderer, BrowsableAPIRenderer, AdminRenderer,TemplateHTMLRenderer
 from rest_framework.views import APIView
 
+class UserDetail(generics.RetrieveAPIView):
+    queryset = User.objects.all()
+    renderer_classes = [TemplateHTMLRenderer]
+
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        return Response({'user': self.object}, template_name='user_detail.html')
     
 class UserCountView(APIView):
     renderer_classes = [JSONRenderer]
