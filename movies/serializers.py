@@ -6,11 +6,29 @@ class PasswordSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True, required=True)
 
 class UserSerializer(serializers.ModelSerializer):
-    movies = serializers.PrimaryKeyRelatedField(many=True, queryset=Movie.objects.all())
+    password = serializers.CharField(write_only=True, required=True)
 
     class Meta:
         model = User
-        fields = ['url', 'id', 'username', 'movies']
+        fields = ['url', 'id', 'username', 'password', 'email', 'groups']
+
+    def create(self, validated_data):
+        # Удаляем группы из validated_data, чтобы предотвратить ошибку
+        groups_data = validated_data.pop('groups', None)
+        
+        # Создаем пользователя
+        password = validated_data.pop('password')
+        user = User(**validated_data)
+        
+        # Устанавливаем пароль с использованием метода set_password
+        user.set_password(password)
+        user.save()
+        
+        # Если были указаны группы, добавляем их
+        if groups_data:
+            user.groups.set(groups_data)
+        
+        return user
 
 class MovieSerializer(serializers.ModelSerializer):
     directors = serializers.PrimaryKeyRelatedField(many=True, queryset=Actor.objects.all())

@@ -1,37 +1,36 @@
 from typing import Any
 from django.conf import settings
-from django.db import models
-from django.db.models import Q, OuterRef, Subquery, Case, When
+from django.db.models import Q
 from django.http import JsonResponse, HttpResponse
-from django.shortcuts import redirect,render
+from django.shortcuts import redirect
 from django.views.generic import ListView, DetailView
 from django.views.generic.base import View
-from .models import Movie, Category, Actor, Genre, Rating, Reviews
+from .models import Movie, Actor, Genre, Rating
 from .forms import ReviewForm, RatingForm
 from .serializers import MovieSerializer
 from rest_framework import viewsets
-from django.views.decorators.csrf import csrf_exempt
-from rest_framework.parsers import JSONParser
 from rest_framework.response import Response
 from rest_framework import generics
 from django.contrib.auth.models import User
 from movies.serializers import UserSerializer,PasswordSerializer
-from rest_framework import permissions
-from movies.permissions import IsOwnerOrReadOnly
 from rest_framework.decorators import api_view
-from rest_framework.response import Response
 from rest_framework.reverse import reverse
-from rest_framework import renderers
-from rest_framework import viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly, IsAdminUser
-from django.shortcuts import get_object_or_404
-from http import HTTPMethod
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework import status
-from rest_framework.renderers import StaticHTMLRenderer
-from rest_framework import mixins, viewsets
+from rest_framework.renderers import JSONRenderer, BrowsableAPIRenderer, AdminRenderer
+from rest_framework.renderers import JSONRenderer,TemplateHTMLRenderer
+from rest_framework.views import APIView
 
+    
+class UserCountView(APIView):
+    renderer_classes = [JSONRenderer]
 
+    def get(self, request, format=None):
+        user_count = User.objects.filter(active=True).count()
+        content = {'user_count': user_count}
+        return Response(content)
+    
 @api_view(['GET'])
 def api_root(request, format=None):
     return Response({
@@ -39,43 +38,51 @@ def api_root(request, format=None):
         'movies': reverse('movie-list', request=request, format=format)
     })
 
-    
-class MovieViewSet(viewsets.ModelViewSet):
-    queryset = Movie.objects.all()
-    serializer_class = MovieSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
+class UserCountView(APIView):
+    renderer_classes = [JSONRenderer]
+    def get(self, request, format=None):
+        user_count = User.objects.filter(active=True).count()
+        content = {'user_count': user_count}
+        return Response(content)
 
-    @action(detail=True, renderer_classes=[StaticHTMLRenderer])
-    def highlight(self, request, *args, **kwargs):
-        movie = self.get_object()
-        return Response(movie.highlighted)
-
-    def perform_create(self, serializer):
-        serializer.save(owner=self.request.user)
-
+           
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]  # Только авторизованные могут просматривать и редактировать
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    renderer_classes = [JSONRenderer, BrowsableAPIRenderer, AdminRenderer]
 
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
-    def set_password(self, request, pk=None):
+    def set_groups(self, request, pk=None):
         user = self.get_object()
         
-        # Проверка: только сам пользователь может менять свой пароль
-        if request.user != user:
+        if not request.user.is_superuser:  # Предположим, только админы могут менять группы
             return Response(
-                {'error': 'Вы можете изменить только свой пароль.'},
+                {'error': 'У вас нет прав для изменения групп.'},
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        serializer = PasswordSerializer(data=request.data)
-        if serializer.is_valid():
-            user.set_password(serializer.validated_data['password'])
-            user.save()
-            return Response({'status': 'установлен новый пароль'}, status=status.HTTP_200_OK)
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        group_ids = request.data.get('group_ids', [])
+        groups = Group.objects.filter(id__in=group_ids)
+        user.groups.set(groups)  # Правильное использование метода set()
+
+        return Response({'status': 'Группы обновлены'}, status=status.HTTP_200_OK)
+
+    def destroy(self, request, *args, **kwargs):
+        user = self.get_object()
+
+        if request.user.is_superuser:
+            self.perform_destroy(user)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        if request.user == user:
+            self.perform_destroy(user)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        return Response(
+            {'error': 'Вы можете удалить только свою учетную запись или должны быть администратором.'},
+            status=status.HTTP_403_FORBIDDEN
+        )
 
     @action(detail=False)
     def recent_users(self, request):
@@ -84,8 +91,32 @@ class UserViewSet(viewsets.ModelViewSet):
         if page is not None:
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
+        
         serializer = self.get_serializer(recent_users, many=True)
         return Response(serializer.data)
+
+class MovieViewSet(viewsets.ModelViewSet):
+    queryset = Movie.objects.all()
+    serializer_class = MovieSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    renderer_classes = [JSONRenderer, BrowsableAPIRenderer, AdminRenderer]
+
+    @action(detail=True)
+    def highlight(self, request, *args, **kwargs):
+        movie = self.get_object()
+        return Response(movie.highlighted)
+
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+
+class UserDetail(generics.RetrieveAPIView):
+    queryset = User.objects.all()
+    renderer_classes = [TemplateHTMLRenderer]
+
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        return Response({'user': self.object}, template_name='user_detail.html')
+
 
 class UserList(generics.ListCreateAPIView):
     queryset = User.objects.all()
@@ -94,15 +125,10 @@ class UserList(generics.ListCreateAPIView):
 
     def list(self, request):
         queryset = self.get_queryset()
-        serializer = UserSerializer(queryset, many=True)
+        serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
 
-<<<<<<< HEAD
-=======
-
-
->>>>>>> 36510f057dc66e84d484b5f0cec8b59cbe9b41a8
 class GenreYear:
     """Жанры и года выхода фильма"""
     def get_genres(self):
